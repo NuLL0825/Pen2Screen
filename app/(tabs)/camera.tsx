@@ -4,10 +4,10 @@ import { Button, StyleSheet, Text, View, Image, TouchableOpacity } from 'react-n
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 
-const IMAGE_DIR = FileSystem.documentDirectory + 'images/'; // Directory to save images
+const IMAGE_DIR = FileSystem.documentDirectory + 'images/';
 
 interface AppProps {
-  setSavedImages: (images: string[]) => void; // Ensure this is typed correctly
+  setSavedImages: (images: string[]) => void;
 }
 
 export default function Camera({ setSavedImages }: AppProps) {
@@ -16,7 +16,6 @@ export default function Camera({ setSavedImages }: AppProps) {
   const cameraRef = useRef<CameraView>(null);
 
   useEffect(() => {
-    // Ensure the image directory exists
     const createDirectory = async () => {
       await FileSystem.makeDirectoryAsync(IMAGE_DIR, { intermediates: true });
     };
@@ -27,44 +26,58 @@ export default function Camera({ setSavedImages }: AppProps) {
     if (cameraRef.current) {
       const photo = await cameraRef.current.takePictureAsync();
       if (photo && photo.uri) {
-        setImageUri(photo.uri); // Set the captured image URI
+        setImageUri(photo.uri);
       }
     }
   };
 
   const saveImage = async (uri: string) => {
-    const fileName = uri.split('/').pop(); // Get the file name from the URI
-    const newPath = `${IMAGE_DIR}${fileName}`; // Define the new path
-
-    // Move the file to the new path
-    await FileSystem.moveAsync({
-      from: uri,
-      to: newPath,
-    });
-
-    console.log(`Image saved to: ${newPath}`);
-    setSavedImages((prev: string[]) => [...prev, newPath]) // Ignore (works fine anyways)
+    const fileName = uri.split('/').pop();
+    const newPath = `${IMAGE_DIR}${fileName}`;
+    await FileSystem.moveAsync({ from: uri, to: newPath });
+    setSavedImages((prev) => [...prev, newPath]);
   };
 
   const handleImagePress = async () => {
     if (imageUri) {
-      await saveImage(imageUri); // Save the image when pressed
-      alert('Image saved successfully!'); // Optional: Show a success message
+      await saveImage(imageUri);
+      alert('Image saved successfully!');
     }
   };
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [4, 3],
       quality: 1,
     });
 
     if (!result.canceled) {
-      setImageUri(result.assets[0].uri); // Set the picked image URI
+      setImageUri(result.assets[0].uri);
     }
   };
+
+  // Check if permission is granted
+  if (permission === null) {
+    return (
+      <View style={styles.container}>
+        <Text>Loading camera permissions...</Text>
+      </View>
+    );
+  }
+
+  // Show error message if permission is denied
+  if (permission.status === 'denied') {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>
+          Camera permission is required. Please grant permission.
+        </Text>
+        <Button title="Request Permission" onPress={requestPermission} />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -109,8 +122,14 @@ const styles = StyleSheet.create({
   },
   capturedImage: {
     width: 300,
-    height: 300 , 
+    height: 300,
     borderRadius: 10,
     marginTop: 10,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 10,
   },
 });

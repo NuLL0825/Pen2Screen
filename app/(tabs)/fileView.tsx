@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, Image, StyleSheet } from 'react-native';
+import { View, Text, FlatList, Image, StyleSheet, Dimensions } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 
 const IMAGE_DIR = FileSystem.documentDirectory + 'images/';
@@ -19,7 +19,11 @@ const FileView: React.FC<FileViewProps> = ({ savedImages }) => {
     };
 
     loadImages();
-  }, [savedImages]); // Reload images whenever savedImages changes
+  }, [savedImages]);
+
+  const renderItem = ({ item }: { item: string }) => (
+    <Image source={{ uri: item }} style={styles.image} />
+  );
 
   return (
     <View style={styles.container}>
@@ -27,7 +31,9 @@ const FileView: React.FC<FileViewProps> = ({ savedImages }) => {
       <FlatList
         data={images}
         keyExtractor={(item) => item}
-        renderItem={({ item }) => <Image source={{ uri: item }} style={styles.image} />}
+        renderItem={renderItem}
+        numColumns={2} // Display images in two columns
+        columnWrapperStyle={styles.columnWrapper} // Style for the column wrapper
       />
     </View>
   );
@@ -37,16 +43,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    alignItems: 'center', // Center items horizontally
   },
   title: {
-    fontSize: 18,
+    fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 16,
   },
+  columnWrapper: {
+    justifyContent: 'space-between', // Space out the columns
+  },
   image: {
-    width: 100,
-    height: 100,
-    marginBottom: 8,
+    width: (Dimensions.get('window').width / 2) - 20, // Make images larger and responsive
+    height: 200, // Set a fixed height for images
+    borderRadius: 10,
+    marginBottom: 16,
   },
 });
 
