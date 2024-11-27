@@ -57,7 +57,9 @@ const styles = StyleSheet.create({
     width: (Dimensions.get('window').width / 2) - 20, // Make images larger and responsive
     height: 200, // Set a fixed height for images
     borderRadius: 10,
-    marginBottom: 16,
+    marginBottom: 2,
+    marginLeft: 1,
+    marginRight: 1,
   },
 });
 

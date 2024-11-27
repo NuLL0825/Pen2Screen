@@ -35,7 +35,7 @@ export default function Camera({ setSavedImages }: AppProps) {
     const fileName = uri.split('/').pop();
     const newPath = `${IMAGE_DIR}${fileName}`;
     await FileSystem.moveAsync({ from: uri, to: newPath });
-    setSavedImages((prev) => [...prev, newPath]);
+    setSavedImages((prev) => [...prev, newPath]); // ignore?? (gumagana amp)
   };
 
   const handleImagePress = async () => {
