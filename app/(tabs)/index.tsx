@@ -9,7 +9,7 @@ export default function HomeScreen() {
       <ThemedText>Follow these steps to use the app:</ThemedText>
       <ThemedText>1. Navigate to the Camera tab to capture handwritten text.</ThemedText>
       <ThemedText>2. Use the File View tab to see your captured images.</ThemedText>
-      <ThemedText>3. Process the images with your Python model.</ThemedText>
+      <ThemedText>3. Process the images with Python model.</ThemedText>
     </ThemedView>
   );
 }
