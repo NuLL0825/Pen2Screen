@@ -3,8 +3,36 @@ import { useState, useRef, useEffect } from 'react';
 import { Button, StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
+import UUID from 'react-native-uuid';
 
 const IMAGE_DIR = FileSystem.documentDirectory + 'images/';
+console.log(IMAGE_DIR);
+
+// const viewFiles = async () => {
+//   try {
+//     const files = await FileSystem.readDirectoryAsync(IMAGE_DIR);
+  
+    
+//     for (const file of files) {
+//       const filePath = IMAGE_DIR + file;
+//       const fileInfo = await FileSystem.getInfoAsync(filePath);
+      
+//       if (fileInfo.exists) {
+//         console.log(`${file} - Type: ${fileInfo.isDirectory ? 'Directory' : 'File'}`);
+//         console.log(`Size: ${fileInfo.size} bytes`);
+//         console.log(`Last Modified: ${new Date(fileInfo.modificationTime).toLocaleString()}`);
+//       } else {
+//         console.log(`${file} does not exist.`);
+//       }
+//     }
+//     console.log(`Total files: ${files.length}`);
+//   } catch (error) {
+//     console.error('Error reading directory:', error);
+//   }
+// };
+
+// viewFiles();
+
 
 interface AppProps {
   setSavedImages: (images: string[]) => void;
@@ -22,26 +50,47 @@ export default function Camera({ setSavedImages }: AppProps) {
     createDirectory();
   }, []);
 
+  const processImage = async (uri: string) => {
+    const formData = new FormData();
+    formData.append('image', {
+        uri,
+        name: 'image.jpg',
+        type: 'image/jpeg',
+    } as any);
+
+    try {
+        const response = await fetch('http://192.168.26.83:5000/process-image', {
+            method: 'POST',
+            body: formData,
+        });
+
+        const result = await response.json();
+        if (response.ok) {
+          const uniqueId = UUID.v4();
+          const processedUri = `${FileSystem.documentDirectory}images/${uniqueId}.jpg`;
+          await FileSystem.downloadAsync(
+            result.processed_image_path, // Correct URL
+            processedUri
+          );
+
+          setSavedImages((prev) => [...prev, processedUri]); // ignore?? (gumagana amp)
+          setImageUri(processedUri);
+          alert('Image processed successfully!');
+        } else {
+            alert(`Error: ${result.error}`);
+        }
+    } catch (error) {
+        console.error(error);
+        alert('Failed to process image.');
+    }
+};
+
   const captureImage = async () => {
     if (cameraRef.current) {
       const photo = await cameraRef.current.takePictureAsync();
       if (photo && photo.uri) {
-        setImageUri(photo.uri);
+        await processImage(photo.uri); // Process the captured image
       }
-    }
-  };
-
-  const saveImage = async (uri: string) => {
-    const fileName = uri.split('/').pop();
-    const newPath = `${IMAGE_DIR}${fileName}`;
-    await FileSystem.moveAsync({ from: uri, to: newPath });
-    setSavedImages((prev) => [...prev, newPath]); // ignore?? (gumagana amp)
-  };
-
-  const handleImagePress = async () => {
-    if (imageUri) {
-      await saveImage(imageUri);
-      alert('Image saved successfully!');
     }
   };
 
@@ -54,11 +103,10 @@ export default function Camera({ setSavedImages }: AppProps) {
     });
 
     if (!result.canceled) {
-      setImageUri(result.assets[0].uri);
+      await processImage(result.assets[0].uri); // Process the picked image
     }
   };
 
-  // Check if permission is granted
   if (permission === null) {
     return (
       <View style={styles.container}>
@@ -67,13 +115,10 @@ export default function Camera({ setSavedImages }: AppProps) {
     );
   }
 
-  // Show error message if permission is denied
   if (permission.status === 'denied') {
     return (
       <View style={styles.container}>
-        <Text style={styles.errorText}>
-          Camera permission is required. Please grant permission.
-        </Text>
+        <Text style={styles.errorText}>Camera permission is required. Please grant permission.</Text>
         <Button title="Request Permission" onPress={requestPermission} />
       </View>
     );
@@ -87,12 +132,12 @@ export default function Camera({ setSavedImages }: AppProps) {
           <Button title="Pick an Image" onPress={pickImage} />
         </View>
       </CameraView>
-      {imageUri && (
-        <TouchableOpacity onPress={handleImagePress} style={styles.imageContainer}>
-          <Text style={styles.imageText}>Captured Image:</Text>
+      {/* {imageUri && (
+        <TouchableOpacity style={styles.imageContainer}>
+          <Text style={styles.imageText}>Processed Image:</Text>
           <Image source={{ uri: imageUri }} style={styles.capturedImage} />
         </TouchableOpacity>
-      )}
+      )} */}
     </View>
   );
 }
