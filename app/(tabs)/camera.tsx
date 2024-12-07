@@ -1,69 +1,79 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useState, useRef, useEffect } from 'react';
-import { Button, StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
+import { Button, StyleSheet, Text, View, TouchableOpacity, ActivityIndicator } from 'react-native';
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
-import UUID from 'react-native-uuid';
 
 const IMAGE_DIR = FileSystem.documentDirectory + 'images/';
-console.log(IMAGE_DIR);
+const TEXT_DIR = FileSystem.documentDirectory + 'texts/';
 
-interface AppProps {
-  setSavedImages: (images: string[]) => void;
+interface CameraProps {
+  loadImages: () => void;
 }
 
-export default function Camera({ setSavedImages }: AppProps) {
+export default function Camera({ loadImages }: CameraProps) {
   const [permission, requestPermission] = useCameraPermissions();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const cameraRef = useRef<CameraView>(null);
+  const [loading, setLoading] = useState(false);
+
 
   useEffect(() => {
-    const createDirectory = async () => {
+    const createDirectories = async () => {
       await FileSystem.makeDirectoryAsync(IMAGE_DIR, { intermediates: true });
+      await FileSystem.makeDirectoryAsync(TEXT_DIR, { intermediates: true });
     };
-    createDirectory();
+    createDirectories();
   }, []);
 
   const processImage = async (uri: string) => {
+    setLoading(true);
     const formData = new FormData();
     formData.append('image', {
-        uri,
-        name: 'image.jpg',
-        type: 'image/jpeg',
-    } as any);
+      uri,
+      name: 'image.jpg',
+      type: 'image/jpeg',
+    });
 
     try {
-        const response = await fetch('http://192.168.26.83:5000/process-image', {
-            method: 'POST',
-            body: formData,
-        });
+      const response = await fetch('http://192.168.26.83:5000/process-image', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        body: formData,
+      });
 
-        const result = await response.json();
-        if (response.ok) {
-          const uniqueId = UUID.v4();
-          const processedUri = `${FileSystem.documentDirectory}images/${uniqueId}.jpg`;
-          await FileSystem.downloadAsync(
-            result.processed_image_path, // Correct URL
-            processedUri
-          );
+      const result = await response.json();
+      if (response.ok) {
+        const imageName = uri.split('/').pop();
+        const text = result.text || 'No text extracted';
 
-          setSavedImages((prev) => [...prev, processedUri]); // ignore?? (gumagana amp)
-          setImageUri(processedUri);
-          alert('Image processed successfully!');
-        } else {
-            alert(`Error: ${result.error}`);
-        }
+        // Save image and extracted text
+        const newImageUri = IMAGE_DIR + imageName;
+        const newTextUri = TEXT_DIR + imageName.replace('.jpg', '.txt');
+
+        await FileSystem.copyAsync({ from: uri, to: newImageUri });
+        await FileSystem.writeAsStringAsync(newTextUri, text);
+
+        alert('Image and text saved locally!');
+      } else {
+        alert(`Error: ${result.error}`);
+      }
     } catch (error) {
-        console.error(error);
-        alert('Failed to process image.');
+      console.error(error);
+      alert('Failed to process image.');
+    } finally {
+      setLoading(false); // End loading
     }
-};
+  };
 
   const captureImage = async () => {
     if (cameraRef.current) {
       const photo = await cameraRef.current.takePictureAsync();
       if (photo && photo.uri) {
-        await processImage(photo.uri); // Process the captured image
+        await processImage(photo.uri);
+        loadImages();
       }
     }
   };
@@ -72,21 +82,16 @@ export default function Camera({ setSavedImages }: AppProps) {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
-      aspect: [4, 3],
       quality: 1,
     });
 
     if (!result.canceled) {
-      await processImage(result.assets[0].uri); // Process the picked image
+      await processImage(result.assets[0].uri);
     }
   };
 
   if (permission === null) {
-    return (
-      <View style={styles.container}>
-        <Text>Loading camera permissions...</Text>
-      </View>
-    );
+    return <Text>Loading camera permissions...</Text>;
   }
 
   if (permission.status === 'denied') {
@@ -100,16 +105,21 @@ export default function Camera({ setSavedImages }: AppProps) {
 
   return (
     <View style={styles.container}>
-      <CameraView style={styles.camera} ref={cameraRef}>
-        <View style={styles.buttonContainer}>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#4CAF50" />
+          <Text style={styles.loadingText}>Processing image, please wait...</Text>
+        </View>
+      ) : (
+        <CameraView style={styles.camera} ref={cameraRef}>
           <TouchableOpacity style={styles.button} onPress={captureImage}>
             <Text style={styles.buttonText}>Capture</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.button} onPress={pickImage}>
             <Text style={styles.buttonText}>Pick an Image</Text>
           </TouchableOpacity>
-        </View>
-      </CameraView>
+        </CameraView>
+      )}
     </View>
   );
 }
@@ -122,26 +132,16 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
   },
-  buttonContainer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 0,
-    right: 0,
-    alignItems: 'center',
+  button: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 16,
+    marginBottom: 10,
   },
-  imageContainer: {
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  imageText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  capturedImage: {
-    width: 300,
-    height: 300,
-    borderRadius: 10,
-    marginTop: 10,
+  buttonText: {
+    color: '#fff',
+    fontSize: 16,
   },
   errorText: {
     color: 'red',
@@ -149,19 +149,14 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 10,
   },
-  button: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 16,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
     alignItems: 'center',
-    width: '40%',
-    marginVertical: 8,
   },
-  buttonText: {
-    color: '#fff',
+  loadingText: {
+    marginTop: 10,
     fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
+    color: '#4CAF50',
   },
 });
