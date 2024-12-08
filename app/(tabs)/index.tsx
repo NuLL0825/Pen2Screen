@@ -1,7 +1,7 @@
 import { ThemedView } from '@/components/ThemedView';
 import { ThemedText } from '@/components/ThemedText';
 import React from 'react';
-import { StyleSheet, View, Image, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, Image, TouchableOpacity, ImageBackground } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 
@@ -13,10 +13,14 @@ export default function HomeScreen() {
   };
 
   return (
+  <ImageBackground
+    source={require('@/assets/images/background.png')} // Change to your image URL or local path
+    style={styles.backgroundImage}
+  >
     <ThemedView style={styles.container}>
       <View style={styles.header}>
         <Image
-          source={require('@/assets/images/react-logo.png')} // Replace with your logo or illustration
+          source={require('@/assets/images/pen2screen-logo-2.png')} // Replace with your logo or illustration
           style={styles.logo}
         />
         <ThemedText type="title" style={styles.title}>
@@ -32,10 +36,10 @@ export default function HomeScreen() {
           How to Use:
         </ThemedText>
         <ThemedText style={styles.step}>
-          1. Navigate to the <ThemedText style={{ color: '#4CAF50', fontWeight: 'bold' }}>Camera</ThemedText> tab to capture handwritten text.
+          1. Navigate to the <ThemedText style={{ color: 'black', fontWeight: 'bold' }}>Camera</ThemedText> tab to capture handwritten text.
         </ThemedText>
         <ThemedText style={styles.step}>
-          2. View your captured images in the <ThemedText style={{ color: '#4CAF50', fontWeight: 'bold' }}>File View</ThemedText> tab.
+          2. View your captured images in the <ThemedText style={{ color: 'black', fontWeight: 'bold' }}>File View</ThemedText> tab.
         </ThemedText>
         <ThemedText style={styles.step}>
           3. Process the images with our Python model for recognition.
@@ -47,16 +51,23 @@ export default function HomeScreen() {
           Get Started
         </ThemedText>
       </TouchableOpacity> 
-    </ThemedView> // ignore error
+    </ThemedView> 
+    
+  </ImageBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  backgroundImage: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   container: {
     flex: 1,
     padding: 20,
     justifyContent: 'space-between',
-    backgroundColor: '#f9f9f9', // Light background
+    backgroundColor: 'rgba(249, 249, 249, 0.1)',
   },
   header: {
     alignItems: 'center',

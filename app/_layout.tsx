@@ -59,7 +59,7 @@ export default function App() {
           tabBarIcon: ({ color, size }) => <Ionicons name="scan-circle-sharp" size={24} color="black" />,
         }}
       >
-        {() => <Camera setSavedImages={setSavedImages} />}
+        {() => <Camera loadImages={savedImages} />}
       </Tab.Screen>
       <Tab.Screen
         name="File View"
