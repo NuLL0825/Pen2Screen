@@ -123,7 +123,7 @@ export default function Camera({ loadImages }: CameraProps) {
     });
 
     try {
-      const response = await fetch('http://192.168.26.83:5000/process-image', {
+      const response = await fetch('http://192.168.129.178:5000/process-image', {
         method: 'POST',
         headers: {
           'Content-Type': 'multipart/form-data',

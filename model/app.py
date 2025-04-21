@@ -17,7 +17,7 @@ def process_image():
         binarize_image(input_path, output_path)
 
         # Return path to processed image (accessible via a new endpoint)
-        return jsonify({"message": "Processing complete", "processed_image_path": "http://192.168.26.83:5000/processed_image.jpg"})
+        return jsonify({"message": "Processing complete", "processed_image_path": "http://192.168.129.178:5000/processed_image.jpg"})
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
